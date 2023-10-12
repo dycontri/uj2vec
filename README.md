@@ -1,6 +1,6 @@
 # uj2vec
 
-Application of Transformer neural networks for representation learning on user journeys (product telemetry event sequences). Makes use of TransformerXL for learning representations that span multiple segments to accomodate very long user journeys. Contrastive loss function coupled with the transformer's memory allows the model to learn representations that are invariant to which segment is in view.
+Application of Transformer neural networks for representation learning and prediction on user journeys (product telemetry event sequences). Makes use of TransformerXL for learning representations that span multiple segments to accomodate very long user journeys. For prediction, ELBO loss allows estimate of confidence intervals. For representation learning, contrastive loss function coupled with the transformer's memory allows the model to learn representations that are invariant to which segment is in view.
 
 ## Table of Contents
 
