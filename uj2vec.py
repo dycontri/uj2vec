@@ -16,7 +16,6 @@ class Encoder(nn.Module):
 
 
         self.project_trans_out = nn.Linear(embed_dim, z_dim)
-        n_labels = 0
 
         #long-context encoder uses cross-segment memory for attending long sequences
         self.transformer_encoder1 = MemTransformerLM(ntoken, nlayers, nhead, embed_dim, embed_dim//nhead, nhid,
@@ -24,7 +23,7 @@ class Encoder(nn.Module):
                  div_val=1, tie_projs=[False], pre_lnorm=False,
                  tgt_len=bptt, ext_len=0, mem_len=bptt, 
                  cutoffs=[], adapt_inp=False,
-                 same_length=True, attn_type=0, czp_len=-1, 
+                 same_length=True, attn_type=0, clamp_len=-1, 
                  sample_softmax=-1)
         
         self.temperature = nn.Parameter(torch.tensor([1/.07]).log())
@@ -67,7 +66,6 @@ class Encoder(nn.Module):
         if store_mems:
           self.mems = new_mems
 
-
         return trans_out
       
       
@@ -109,16 +107,24 @@ class UJ2Vec(nn.Module):
         self.project_c_to_joint_space = nn.Linear(z_dim, z_dim)
         self.project_p_to_joint_space = nn.Linear(z_dim, z_dim)
 
-        self.decoder = [
+        self.decoder_representation = [
             self.project_c_to_joint_space, 
             self.project_p_to_joint_space
-        ]
+        ]       
+        self.decoder_prediction = nn.Sequential(
+            nn.Linear(z_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, ntoken),
+            nn.Sigmoid()
+        )
         self.encoder.transformer_encoder1.word_emb = self.embedding
         
         if use_cuda:
             self.cuda()
  
-    def loss(self, u, v):
+    def contrastive_loss(self, u, v):
       """
       u: joint space embedding of current segment
       v: joint space embedding of a previous segment
@@ -127,12 +133,32 @@ class UJ2Vec(nn.Module):
       u and v
       """
       logits = torch.einsum("...hi,...ji->...hj",u, v)
-      logits = logits * torch.exp(self.encoder.temperature).czp(1e-5, 500.)
+      logits = logits * torch.exp(self.encoder.temperature).clamp(1e-5, 500.)
       labels = torch.arange(u.size(-2))
     
       loss_c = dist.Categorical(logits=logits).log_prob(labels)
       loss_p = dist.Categorical(logits=logits.transpose(-1, -2)).log_prob(labels)
       loss = -(loss_c + loss_p)/2
+    
+      return loss
+        
+    def elbo_loss(self, z_loc, z_scale, y):
+      """
+      u: joint space embedding of current segment
+      v: joint space embedding of a previous segment
+    
+      Computes the loss based on the cosine similarity of 
+      u and v
+      """
+      p_z = dist.Normal(torch.zeros_like(z_loc), torch.ones_like(z_scale))
+      q_z dist.Normal(z_loc, z_scale)
+        
+      p = self.decoder(z)
+    
+      cross_entropy = dist.Categorical(probs=p).log_prob(y)
+      kl_divergence = dist.kl.kl_divergence(q_z, p_z)
+      
+      loss = - (cross_entropy - kl_divergence)
     
       return loss
 
