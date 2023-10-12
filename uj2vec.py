@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch.distributions as dist
-
+from mem_transformer import MemTransformerLM
 
 class Encoder(nn.Module):
     def __init__(self, embedding, ntoken, z_dim,  embed_dim, nhead, nhid, nlayers, gain, bptt, 
