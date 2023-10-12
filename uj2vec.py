@@ -144,11 +144,10 @@ class UJ2Vec(nn.Module):
         
     def elbo_loss(self, z_loc, z_scale, y):
       """
-      u: joint space embedding of current segment
-      v: joint space embedding of a previous segment
+      z_loc: Mean parameter of the variational distribution
+      z_scale: standard deviation parameter of the variational distribution
     
-      Computes the loss based on the cosine similarity of 
-      u and v
+      computes the loss given the approximate posterior distribution, q_z, and y
       """
       p_z = dist.Normal(torch.zeros_like(z_loc), torch.ones_like(z_scale))
       q_z dist.Normal(z_loc, z_scale)
