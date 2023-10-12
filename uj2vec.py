@@ -14,11 +14,8 @@ class Encoder(nn.Module):
         self.nhead = nhead
         dropatt = dropout
 
-        #Two projections from current view and a random previous view into joint space
-        self.project_c_to_joint_space = nn.Linear(z_dim, z_dim)
-        self.project_p_to_joint_space = nn.Linear(z_dim, z_dim)
 
-        self.project_trans_out = nn.Linear(embed_dim, z_dim*2)
+        self.project_trans_out = nn.Linear(embed_dim, z_dim)
         n_labels = 0
 
         #long-context encoder uses cross-segment memory for attending long sequences
@@ -27,7 +24,7 @@ class Encoder(nn.Module):
                  div_val=1, tie_projs=[False], pre_lnorm=False,
                  tgt_len=bptt, ext_len=0, mem_len=bptt, 
                  cutoffs=[], adapt_inp=False,
-                 same_length=True, attn_type=0, clamp_len=-1, 
+                 same_length=True, attn_type=0, czp_len=-1, 
                  sample_softmax=-1)
         
         self.temperature = nn.Parameter(torch.tensor([1/.07]).log())
@@ -63,7 +60,7 @@ class Encoder(nn.Module):
         torch.nn.init.zeros_(self.embedding.weight)
 
 
-    def _src_to_lam(self, src, mems, store_mems=True, dropout=0.):
+    def _src_to_z(self, src, mems, store_mems=True, dropout=0.):
      
         trans_out, new_mems = self.transformer_encoder1._forward(src, mems, False, dropout=dropout)
         trans_out = self.project_trans_out(trans_out)
@@ -79,16 +76,9 @@ class Encoder(nn.Module):
         if not mems:
           mems = self.transformer_encoder1.init_mems()
 
-        lam = self._src_to_lam(src.clone(), mems=mems, store_mems=store_mems, dropout=dropout) 
+        z = self._src_to_z(src.clone(), mems=mems, store_mems=store_mems, dropout=dropout) 
 
-        mu = lam[..., -self.transformer_encoder1.tgt_len:, :, :self.z_dim]
-        a = torch.nn.ReLU()(lam[..., -1:]).clamp(1e-4, 1e5)
-        sd = lam[..., -self.transformer_encoder1.tgt_len:, :, self.z_dim:]
-
-        mu.clamp(-1e2, 1e2)
-        sd = (sd.clamp(-1e2, 1e2).exp().clamp(1e-5))
-
-        return mu, sd
+        return z
         
 
 class UJ2Vec(nn.Module):
@@ -98,8 +88,6 @@ class UJ2Vec(nn.Module):
         super(UJ2Vec, self).__init__()
         self.z_prior_scale = z_prior_scale
         self.gain = gain
-        self.K = min(10, bptt)
-        self.likelihood_dist = dist.Categorical
         self.nlayers = nlayers
         self.nparticles = 1
         self.ntoken = ntoken
@@ -116,7 +104,15 @@ class UJ2Vec(nn.Module):
 
                                nlayers=nlayers, nhead=nhead, ntoken=ntoken,
                                gain=gain, bptt=self.bptt)
-        
+
+        #Two projections from current view and a random previous view into joint space
+        self.project_c_to_joint_space = nn.Linear(z_dim, z_dim)
+        self.project_p_to_joint_space = nn.Linear(z_dim, z_dim)
+
+        self.decoder = [
+            self.project_c_to_joint_space, 
+            self.project_p_to_joint_space
+        ]
         self.encoder.transformer_encoder1.word_emb = self.embedding
         
         if use_cuda:
@@ -132,7 +128,7 @@ class UJ2Vec(nn.Module):
       """
       
       logits = torch.einsum("...hi,...ji->...hj",u, v)
-      logits = logits * torch.exp(self.encoder.temperature).clamp(1e-5, 500.)
+      logits = logits * torch.exp(self.encoder.temperature).czp(1e-5, 500.)
       labels = torch.arange(u.size(-2))
 
       loss_c = dist.Categorical(logits=logits).log_prob(labels)
