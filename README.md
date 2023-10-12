@@ -17,7 +17,7 @@ TransformerXL - https://github.com/kimiyoung/transformer-xl/tree/master/pytorch
 
 #### Initialize the model:
 
-`model = UJ2Vec(dropout=0.1, ntoken=26, bptt=100, embed_dim = 64, z_dim=256, \
+` model = UJ2Vec(dropout=0.1, ntoken=26, bptt=100, embed_dim = 64, z_dim=256, \
  hidden_dim=512, nhead=4, nlayers=2)
 
 #### Encode a batch of event sequence tokens with shape according to length of the sequence and batch size
@@ -37,7 +37,7 @@ v = model.decoder_representation[1](previous_z)
 
 #### Compute the contrastive loss based on cosine similarity between current view and a previous view.
 
-`loss = model.contrastive_loss(u, v)
+` loss = model.contrastive_loss(u, v)
 
 #### Reset encoder memory
 ```
@@ -48,7 +48,7 @@ model.encoder.mems = None
 
 #### Initialize the model:
 
-`model = UJ2Vec(dropout=0.1, ntoken=26, bptt=100, embed_dim = 64, z_dim=256*2, \
+` model = UJ2Vec(dropout=0.1, ntoken=26, bptt=100, embed_dim = 64, z_dim=256*2, \
  hidden_dim=512, nhead=4, nlayers=2)
 
 #### Encode a batch of event sequence tokens with shape according to length of the sequence and batch size
@@ -62,4 +62,4 @@ z_loc, z_logsd = torch.split(model.encoder(event_tokens), model.z_dim//2, dim=-1
 
 #### Compute the elbo loss
 
-`loss = model.elbo_loss(u, v)
+` loss = model.elbo_loss(u, v)
