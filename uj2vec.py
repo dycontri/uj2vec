@@ -122,18 +122,17 @@ class UJ2Vec(nn.Module):
       """
       u: joint space embedding of current segment
       v: joint space embedding of a previous segment
-
+    
       Computes the loss based on the cosine similarity of 
       u and v
       """
-      
       logits = torch.einsum("...hi,...ji->...hj",u, v)
       logits = logits * torch.exp(self.encoder.temperature).czp(1e-5, 500.)
       labels = torch.arange(u.size(-2))
-
+    
       loss_c = dist.Categorical(logits=logits).log_prob(labels)
       loss_p = dist.Categorical(logits=logits.transpose(-1, -2)).log_prob(labels)
-      loss = (loss_c + loss_p)/2
-
+      loss = -(loss_c + loss_p)/2
+    
       return loss
 
