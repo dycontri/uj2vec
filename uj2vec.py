@@ -132,6 +132,9 @@ class UJ2Vec(nn.Module):
       Computes the loss based on the cosine similarity of 
       u and v
       """
+      u = u/u.norm(-1, keepdim=True)
+      v = v/v.norm(-1, keepdim=True)
+        
       logits = torch.einsum("...hi,...ji->...hj",u, v)
       logits = logits * torch.exp(self.encoder.temperature).clamp(1e-5, 500.)
       labels = torch.arange(u.size(-2))
