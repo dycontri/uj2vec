@@ -59,9 +59,9 @@ class Encoder(nn.Module):
         torch.nn.init.zeros_(self.embedding.weight)
 
 
-    def _src_to_z(self, src, mems, store_mems=True, dropout=0.):
+    def _src_to_z(self, src, mems, store_mems=True):
      
-        trans_out, new_mems = self.transformer_encoder1._forward(src, mems, False, dropout=dropout)
+        trans_out, new_mems = self.transformer_encoder1._forward(src, mems, False)
         trans_out = self.project_trans_out(trans_out)
         if store_mems:
           self.mems = new_mems
@@ -69,12 +69,12 @@ class Encoder(nn.Module):
         return trans_out
       
       
-    def forward(self, src, store_mems=True, use_mems=True, dropout=0.):
+    def forward(self, src, store_mems=True, use_mems=True):
         mems = self.mems if use_mems else None
         if not mems:
           mems = self.transformer_encoder1.init_mems()
 
-        z = self._src_to_z(src.clone(), mems=mems, store_mems=store_mems, dropout=dropout) 
+        z = self._src_to_z(src.clone(), mems=mems, store_mems=store_mems) 
 
         return z
         
