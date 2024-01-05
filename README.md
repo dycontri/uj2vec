@@ -8,8 +8,13 @@ Application of Transformer neural networks for representation learning and predi
 - Usage
 
 ## Prerequisites
+- Python
+- Pytorch
+- TransformerXL - https://github.com/kimiyoung/transformer-xl/tree/master/pytorch
 
-TransformerXL - https://github.com/kimiyoung/transformer-xl/tree/master/pytorch
+  For user journeys with thousands of events, it may be necessary to divide sequences into multiple, smaller segments. Extra-large attention contexts, as in \href{https://arxiv.org/abs/1901.02860}{[1901.02860] Transformer-XL: Attentive Language Models Beyond a Fixed-Length Context (arxiv.org)}, retain information across the segments.
+
+  The main difference in use of XL transformers is the provision of a list of memory tokens from previous segments. During evaluation, it is necessary to reset the memory when processing a new user journey to avoid conditioning on information from any previously processed journey (see 'Reset Encoder Memory' section below.)
 
 ## Usage
 
