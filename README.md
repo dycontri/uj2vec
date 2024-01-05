@@ -22,7 +22,7 @@ Application of Transformer neural networks for representation learning and predi
 
 #### Initialize the model:
 
-`model = UJ2Vec(dropout=0.1, ntoken=26, bptt=100, embed_dim = 64, z_dim=256, hidden_dim=512, nhead=4, nlayers=2)`
+`model = UJ2Vec(dropout=0.1, ntoken=26, bptt=100, embed_dim=64, z_dim=256, hidden_dim=512, nhead=4, nlayers=2)`
 
 #### Encode a batch of event sequence tokens with shape according to length of the sequence and batch size
 ```
